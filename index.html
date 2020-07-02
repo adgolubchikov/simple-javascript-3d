@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0" />
+<title>3D Grapher</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+<script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+</head>
+<body>
+
+<div id="graph">
+<div id="canvas">
+
+</div>
+</div>
+<button id="show" onclick="show()" style="display:none;z-index:2;position:absolute;right:10px;top:10px">Show</button>
+<form id="set" style="display:block;z-index:2;position:absolute;right:10px;top:10px;border:1px solid black" autocomplete="off" onsubmit="return false">
+<b>Limits:</b><br/>
+x = [ <input type="text" id="jxmin" value="0" size="3" onchange="update3doptions();g.clear();do3d(1);"/>, 
+<input type="text" id="jxmax" value="3" size="3" onchange="update3doptions();g.clear();do3d(1);"/> ]<br/>
+y = [
+<input type="text" id="jymin" value="0" size="3" onchange="update3doptions();g.clear();do3d(1);"/>, 
+<input type="text" id="jymax" value="3" size="3" onchange="update3doptions();g.clear();do3d(1);"/> ]<br/>
+z = [ <input type="text" id="jzmin" value="0" size="3" onchange="update3doptions();g.clear();do3d(1);"/>, 
+<input type="text" id="jzmax" value="3" size="3" onchange="update3doptions();g.clear();do3d(1);"/> ]<br/><br/>
+<b>Precision:</b>
+<input type="text" id="jxsteps" value="18" size="2" onchange="update3doptions();g.clear();do3d(1);"/><br/>
+
+z = <input type="text" id="z0" value="sin(x)*cos(y)" size="15" onchange="update3doptions();ez0=js(this.value,'(x|y)');g.clear();do3d(1);" /><br />
+<br/>
+<button onclick="hide()">Hide</button>
+</form>
+
+
+<script type="text/javascript" src="main.js"></script>
+<script type="text/javascript">
+const MODE='grapher';
+function hide()
+{
+id('set').style.display='none';
+id('show').style.display='block';
+}
+
+function show()
+{
+id('show').style.display='none';
+id('set').style.display='block';
+}
+id('graph').setAttribute('style','width:'+innerWidth+'px;height:'+innerHeight+'px;position:absolute;top:0px;left:0px;background:#eeeeee');
+id('canvas').setAttribute('style','width:'+innerWidth+'px;height:'+innerHeight+'px;position:absolute;top:0px;left:0px;background:#eeeeee');
+
+
+let jxmin=0;jxmax=3,jymin=0,jymax=3,jzmin=0,jzmax=3,jxsteps=18,jysteps=18;
+function update3doptions() {
+  eval('jxmin='+js(id('jxmin').value,"-")+';');
+  eval('jxmax='+js(id('jxmax').value,"-")+';');
+  eval('jymin='+js(id('jymin').value,"-")+';');
+  eval('jymax='+js(id('jymax').value,"-")+';');
+  eval('jzmin='+js(id('jzmin').value,"-")+';');
+  eval('jzmax='+js(id('jzmax').value,"-")+';');
+  jxsteps=parseFloat(id('jxsteps').value);
+  jysteps=jxsteps;
+}
+
+let a={xmin: 0, xmax: 0, ymin: 0, ymax: 0};
+
+let dragging=false;
+let dragx,dragy;
+let dobj;
+let oxmin,oxmax,oymin,oymax;
+let currenttool=0;
+let resizerect;
+let oloc,oori,oorio,loc=new Array(4);
+
+
+id('graph').onmousedown=draghandler;
+id('graph').ontouchstart=draghandlertouch;
+id('graph').onmouseup=uphandler;
+id('graph').ontouchend=function(e){g.clear();draw3daxes();do3d(0);}//uphandlertouch;
+let q;
+
+let swidth=innerWidth;
+let sheight=innerHeight;
+
+let g=new graph('canvas',swidth,sheight);
+let cam = new camera();
+
+g.init();
+
+
+function findroot(f,initx) {
+  let x=initx,xpd,y,ypd,step=.0000000001;
+  let i=0;
+  if(f==null) { return null; }
+  eval('y='+f);
+  if(y==null) { return null; }
+  while(i<100) {
+    i++;
+    eval('y='+f);
+    x+=step;
+    eval('ypd='+f);
+    if(y-ypd!=0) {
+      x+=y*step/(y-ypd);
+    }
+  }
+  return x;
+}
+
+let ez0=js("sin(x)*cos(y)","(x|y)");
+
+let txmin;
+let txmax;
+let tymin;
+let tymax;
+let txsteps;
+let tysteps;
+let gridlines=1;
+let s,x,y,sx,sy,lsx,lsy,asx,asy;
+let sxpoints = new Array();
+let sypoints = new Array();
+
+function resetzoom() {
+txmin=jxmin;txmax=jxmax;
+tymin=jymin;tymax=jymax;
+txsteps=jxsteps;
+tysteps=jysteps;
+cam.setcameralocation(new Array(1,2,1,-10));
+cam.setcameraorientation(new Array(0,0,1));
+g.clear();
+do3d(1);
+}
+
+function do3d(recalc) {
+ctx.beginPath();
+  setwindow(-3,3,-3*(innerHeight/innerWidth),3*(innerHeight/innerWidth));
+  if(recalc) { build3d(); }
+  draw3daxes();
+  draw3drender();
+  ctx.stroke();
+}
+
+function draw3daxes() {
+ let sorigin=getscreencoords(cam.getprojection(new Array(0,0,0)));
+ let sxvector=getscreencoords(cam.getprojection(new Array(3,0,0)));
+ let syvector=getscreencoords(cam.getprojection(new Array(0,3,0)));
+ let szvector=getscreencoords(cam.getprojection(new Array(0,0,3)));
+ g.setcolor("#ff0000");
+ g.line(sorigin[0],sorigin[1],sxvector[0],sxvector[1]);
+ g.text(sxvector[0],sxvector[1],"x","Verdana",12);
+ g.setcolor("#008000");
+ g.line(sorigin[0],sorigin[1],syvector[0],syvector[1]);
+ g.text(syvector[0],syvector[1],"y","Verdana",12);
+ g.setcolor("#0000ff");
+ g.line(sorigin[0],sorigin[1],szvector[0],szvector[1]);
+ g.text(szvector[0],szvector[1],"z","Verdana",12);
+}
+
+
+function draw3drender() {
+  let s,ls,xi,yi;
+  let xp,yp;
+  g.setcolor('#000000');
+  for(let xi=0;xi<jxsteps;xi++) {
+  ls=null;
+  xp=new Array();
+  yp=new Array();
+  for(let yi=0;yi<jysteps;yi++) {
+    if(!isNaN(zpoints[xi+jxsteps*yi]) && isFinite(zpoints[xi+jxsteps*yi])) {
+      s=getscreencoords(cam.getprojection(new Array(xpoints[xi+jxsteps*yi],ypoints[xi+jxsteps*yi],zpoints[xi+jxsteps*yi])));
+    } else {
+      s=null;
+    }
+    if(s) { xp.push(s[0]);yp.push(s[1]); }
+    ls=s;
+  }
+  g.polyline(xp,yp);
+  }
+  for(let xi=0;xi<jxsteps;xi++) {
+  ls=null;
+  xp=new Array();
+  yp=new Array();
+  for(let yi=0;yi<jysteps;yi++) {
+    if(!isNaN(zpoints[yi+jysteps*xi]) && isFinite(zpoints[yi+jysteps*xi])) {
+      s=getscreencoords(cam.getprojection(new Array(xpoints[yi+jysteps*xi],ypoints[yi+jysteps*xi],zpoints[yi+jysteps*xi])));
+    } else {
+      s=null;
+    }
+    if(s) { xp.push(s[0]);yp.push(s[1]); }
+    ls=s;
+  }
+  g.polyline(xp,yp);
+  }
+}
+
+let xpoints=new Array();
+let ypoints=new Array();
+let zpoints=new Array();
+
+function build3d() {
+  let incr=0,xi,yi;
+  xpoints=new Array();
+  ypoints=new Array();
+  zpoints=new Array();
+  g.setcolor('#000000');
+  for(xi=0;xi<jxsteps;xi++) {
+  for(yi=0;yi<jysteps;yi++) {
+    x=jxmin+xi*(jxmax-jxmin)/(jxsteps-1);
+    y=jymin+yi*(jymax-jymin)/(jysteps-1);
+    eval("z="+ez0);
+    xpoints.push(3*(x-jxmin)/(jxmax-jxmin));
+    ypoints.push(3*(y-jymin)/(jymax-jymin));
+    zpoints.push(3*(z-jzmin)/(jzmax-jzmin));
+  }
+  }
+}
+
+update3doptions();
+resetzoom();
+do3d(1);
+</script>
+</body>
+</html>

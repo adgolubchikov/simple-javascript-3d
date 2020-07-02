@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0" />
+<title>3D Models</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+<script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+<style>
+button
+{
+margin-top:10px;
+}
+</style>
+</head>
+<body>
+<a id="screenshot" href="#" style="display:none" download="model.png"></a>
+<div id="actions" style="display:none">
+<div id="graph">
+<div id="canvas">
+
+</div>
+</div>
+<div style="z-index:2;position:absolute;left:10px;top:10px">
+<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" onclick="zoom(1.33)">+</button>
+<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" onclick="zoom(0.75)">-</button>
+<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" onclick="mkscr()">S</button>
+</div>
+</div>
+<div id="settings" style="z-index:3;position:absolute;top:0px;left:0px;right:0px;text-align:center">
+	<br/>
+<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" onclick="make('cube')">Cube</button>
+<br/><br/>
+<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" onclick="make('pyr3')">Pyramide 3</button>
+<br/><br/>
+<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" onclick="make('pyr4')">Pyramide 4</button>
+<br/><br/>
+<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" onclick="make('prism3')">Prism 3</button>
+</div>
+<script type="text/javascript" src="main.js"></script>
+<script type="text/javascript">
+const MODE='examples';
+let a={xmin: -6, xmax: 6, ymin: -6*(innerHeight/innerWidth), ymax: 6*(innerHeight/innerWidth)};
+
+id('graph').setAttribute('style','width:'+innerWidth+'px;height:'+innerHeight+'px;position:absolute;top:0px;left:0px;background:#eeeeee');
+id('canvas').setAttribute('style','width:'+innerWidth+'px;height:'+innerHeight+'px;position:absolute;top:0px;left:0px;background:#eeeeee');
+
+
+
+let dragging=false;
+let dragx,dragy;
+let dobj;
+let oxmin,oxmax,oymin,oymax;
+let oloc,oori,oorio,loc=new Array(4);
+
+
+id('graph').onmousedown=draghandler;
+id('graph').ontouchstart=draghandlertouch;
+id('graph').onmouseup=uphandler;
+id('graph').ontouchend=function(e){g.clear();render();draw();}//uphandlertouch;
+
+id('graph').onmousewheel=mousewheel;
+
+
+let q;
+
+let swidth=innerWidth;
+let sheight=innerHeight;
+
+let g=new graph('canvas',swidth,sheight);
+let cam = new camera();
+
+g.init();
+
+
+let txmin;
+let txmax;
+let tymin;
+let tymax;
+let txsteps;
+let tysteps;
+let gridlines=1;
+let s,x,y,sx,sy,lsx,lsy,asx,asy;
+let sxpoints = new Array();
+let sypoints = new Array();
+
+
+
+
+function make(act)
+{
+id('actions').style.display='block';
+id('settings').style.display='none';
+switch(act)
+{
+case 'cube':
+window.render=function(){cube();}
+break;
+case 'pyr3':
+window.render=function(){pyramide3();}
+break;
+case 'pyr4':
+window.render=function(){pyramide4();}
+break;
+case 'prism3':
+window.render=function(){prism3();}
+break;
+default:
+window.render=function(){cube();}
+}
+resetzoom();
+draw();
+}
+</script>
+</body>
+</html>

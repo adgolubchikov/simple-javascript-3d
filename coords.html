@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0" />
+<title>Simple 3D Modeling Tool</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+<script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+<style>
+button
+{
+margin-top:10px;
+}
+.point, .line
+{
+border-top: 1px dotted black;
+}
+</style>
+</head>
+<body onload="start()" onresize="start()">
+<a id="screenshot" href="#" style="display:none" download="model.png"></a>
+<div id="actions" style="display:block">
+<div id="graph">
+<div id="canvas">
+
+</div>
+</div>
+<div style="z-index:2;position:absolute;left:10px;top:10px">
+<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" onclick="zoom(1.33)">+</button>
+<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" onclick="zoom(0.75)">-</button>
+<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" onclick="mkscr()">S</button>
+</div>
+
+</div>
+<div class="mdl-list" id="panel" style="z-index:3;position:absolute;top:0px;right:0px;background-color:#f6f4f2;text-align:right;border:1px solid black">
+<button class="mdl-button mdl-js-button mdl-button--primary" onclick="addpoint()">Add point</button>
+<button class="mdl-button mdl-js-button mdl-button--primary" onclick="addline()">Add line</button><br/>
+</div>
+<script type="text/javascript" src="main.js"></script>
+<script type="text/javascript">
+let a={xmin: -6, xmax: 6, ymin: -6*(innerHeight/innerWidth), ymax: 6*(innerHeight/innerWidth)};
+const MODE='coords';
+
+function start()
+{
+id('graph').setAttribute('style','width:'+innerWidth+'px;height:'+innerHeight+'px;position:absolute;top:0px;left:0px;background:#eeeeee');
+id('canvas').setAttribute('style','width:'+innerWidth+'px;height:'+innerHeight+'px;position:absolute;top:0px;left:0px;background:#eeeeee');
+a.xmin=-6;
+a.xmax=6;
+a.ymin=-6*(innerHeight/innerWidth);
+a.ymax=6*(innerHeight/innerWidth);
+document.getElementsByTagName('canvas')[0].width=innerWidth;
+document.getElementsByTagName('canvas')[0].height=innerHeight;
+resetzoom();
+draw();
+}
+
+
+let dragging=false;
+let dragx,dragy;
+let dobj;
+let oxmin,oxmax,oymin,oymax;
+let oloc,oori,oorio,loc=new Array(4);
+
+
+
+id('graph').onmousedown=draghandler;
+id('graph').ontouchstart=draghandlertouch;
+id('graph').onmouseup=uphandler;
+id('graph').ontouchend=function(e){redraw()}//uphandlertouch;
+
+id('graph').onmousewheel = mousewheel;
+
+
+let q;
+
+let swidth=innerWidth;
+let sheight=innerHeight;
+
+let g=new graph('canvas',swidth,sheight);
+let cam = new camera();
+
+g.init();
+
+
+let txmin;
+let txmax;
+let tymin;
+let tymax;
+let txsteps;
+let tysteps;
+let gridlines=1;
+let s,x,y,sx,sy,lsx,lsy,asx,asy;
+let sxpoints = new Array();
+let sypoints = new Array();
+
+
+
+function addpoint()
+{
+html='';
+html+='X: <input oninput="redraw()" type="text" class="x" value="0" size="3" />';
+html+='Y: <input oninput="redraw()" type="text" class="y" value="0" size="3" />';
+html+='Z: <input oninput="redraw()" type="text" class="z" value="0" size="3" /><br/>';
+html+='Point name: <input oninput="redraw()" type="text" class="n" value="A" size="3" />';
+html+='<i style="cursor:pointer" class="mdl-color-text--blue-grey-400 material-icons" role="presentation" onclick="removep(this)">delete</i>';
+newel=document.createElement('div');
+newel.setAttribute('class','point mdl-navigation__link');
+newel.innerHTML=html;
+document.getElementById('panel').appendChild(newel);
+redraw();
+}
+
+function addline() {
+    html = '';
+    html += 'Line between <select onchange="redraw()" class="from">';
+    inp_points = cl('point');
+    inpn = cl('n'); //Name of point
+    inpx = cl('x');
+    inpy = cl('y');
+    inpz = cl('z');
+    for (i = 0; i < inp_points.length; i++) {
+        html += '<option value="' + inpn[i].value + '">' + inpn[i].value + '</option>';
+    }
+    html += '</select>';
+    html += ' and <select onchange="redraw()" class="to">';
+    for (i = 0; i < inp_points.length; i++) {
+        html += '<option value="' + inpn[i].value + '">' + inpn[i].value + '</option>';
+    }
+    html += '</select>';
+    html += '<i style="cursor:pointer" class="mdl-color-text--blue-grey-400 material-icons" role="presentation" onclick="removep(this)">delete</i>';
+    newel = document.createElement('div');
+    newel.setAttribute('class', 'line mdl-navigation__link');
+    newel.innerHTML = html;
+    document.getElementById('panel').appendChild(newel);
+    redraw();
+}
+
+render=function(){};
+
+</script>
+</body>
+</html>
